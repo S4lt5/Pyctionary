@@ -12,16 +12,16 @@ import threading
 
 
 
-def chunkyWorkload(reactor, protocol):
+def DoodleQueueWorkload(reactor, protocol):
     while True:
         if not Communicator.doodle_queue.empty():
             while not Communicator.doodle_queue.empty():
                 line = Communicator.doodle_queue.get()
                 protocol.sendLine(line)
-        yield deferLater(reactor, 0.2, lambda: None)
+        yield deferLater(reactor, 0.1, lambda: None)
 
 #largely cribbed from docs at https://twistedmatrix.com/trac/
-class PubProtocol(basic.LineReceiver):
+class HostProtocol(basic.LineReceiver):
     def __init__(self, factory):
         self.factory = factory
 
@@ -35,13 +35,15 @@ class PubProtocol(basic.LineReceiver):
 
     def lineReceived(self, line):
         try:
+            for c in self.factory.clients:
+                c.sendLine(line)
             doodle = Doodle.parse(line)
             self.communicator.draw_callback(doodle,retransmit=False)
         except:
             raise ValueError("Got an invalid doodle. Ignoring")
 
 
-class PubClientProtocol(basic.LineReceiver):
+class ClientProtocol(basic.LineReceiver):
 
 
 
@@ -51,19 +53,15 @@ class PubClientProtocol(basic.LineReceiver):
         self.queue = Queue.Queue()
         #self.transport.registerProducer(QueueProducer(self.transport), False)
         self.sendLine("3,0,0")
-        gen = chunkyWorkload(self.transport.reactor, self)
+        gen = DoodleQueueWorkload(self.transport.reactor, self)
         self.task = cooperate(gen)
 
 
     def lineReceived(self, line):
         try:
-            print("got a line")
+            print("got a line: [" + line + "]")
             doodle = Doodle.parse(line)
             self.communicator.draw_callback(doodle,retransmit=False)
-            #for c in self.factory.clients:
-            #   c.sendLine("Got it")
-
-
         #    c.sendLine("<{}> {}".format(self.transport.getHost(), line))
         except:
             raise ValueError("Got an invalid doodle. Ignoring")
@@ -81,7 +79,7 @@ class PubFactory(protocol.Factory):
 
     def buildProtocol(self, addr):
         #build the protocol, and return the callback draw function that is available on this reactor
-        return PubProtocol(self)
+        return HostProtocol(self)
 
 
 class PubClientFactory(ClientFactory):
@@ -96,7 +94,7 @@ class PubClientFactory(ClientFactory):
 
     def buildProtocol(self, addr):
         print 'Connected.'
-        self.protocol = PubClientProtocol()
+        self.protocol = ClientProtocol()
 
         return self.protocol
 
@@ -132,8 +130,8 @@ class Communicator(object):
         self.send_callback = None
         #queue of outbound
 
-        PubProtocol.communicator = self
-
+        HostProtocol.communicator = self
+        ClientProtocol.communicator = self
 
     def connect(self,host = None,remote_address=None):
         '''

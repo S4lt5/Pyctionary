@@ -162,7 +162,7 @@ class GUI(object):
         doodle = Doodle(Doodle.OVAL,event.x,event.y,None,None)
         self.draw(doodle)
         #draw a line between this position and the last to ensure we have a continuous drawing line
-        if self.last_pos:
+        if self.last_pos and len(self.last_pos) == 2: #check for len 2 because moving mouse off canvas has weird effects
             line_doodle = Doodle(Doodle.LINE,event.x,event.y,self.last_pos[0],self.last_pos[1])
             self.draw(line_doodle)
 
