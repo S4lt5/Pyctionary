@@ -1,6 +1,7 @@
 __author__ = 'matthewgalligan'
 from Tkinter import *
-
+from phrase_generator import PhraseGenerator
+import tkMessageBox
 
 class GUI(object):
     '''
@@ -21,11 +22,15 @@ class GUI(object):
         canvas.bind("<B1-Motion>", self.paint)
         canvas.bind("<Button-1>",self.paint)
         canvas.bind("<ButtonRelease-1>",self.unpaint)
+
+        button = Button(gui,text="Generate Phrase",command=self.get_phrase)
+        button.pack()
         #the drawing canvas that is the focus of our app
         self.canvas = canvas
         #This is the list of individual draw elements
         self.doodles = []
 
+        self.generator = PhraseGenerator
         menu = Menu(gui)
         file_menu = Menu(menu,tearoff=0)
         file_menu.add_command(label="Save",command=self.save)
@@ -35,12 +40,18 @@ class GUI(object):
         gui.config(menu=menu)
         mainloop()
 
+
+    def get_phrase(self):
+        phrase = self.generator.GetPhrase()
+        tkMessageBox.showinfo("Your Phrase","Your Pyctionary Phrase is: " + phrase)
+
+
     def save(self):
         '''
         Save a drawing to file
         :return: nothing
         '''
-        with open("doodles.txt","w+") as f:
+        with open("doodles.txt","w") as f:
             for doodle in self.doodles:
                 line = "%d,%d,%d" % (doodle.doodle_type,doodle.x,doodle.y)
                 #if there is a destination point, also write this
