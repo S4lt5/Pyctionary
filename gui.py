@@ -1,6 +1,8 @@
 __author__ = 'matthewgalligan'
 from Tkinter import *
 from phrase_generator import PhraseGenerator
+from communicator import Communicator
+from popup_window import InputDialog
 import tkMessageBox
 
 class GUI(object):
@@ -31,15 +33,40 @@ class GUI(object):
         self.doodles = []
 
         self.generator = PhraseGenerator
+        self.communicator = Communicator()
         menu = Menu(gui)
         file_menu = Menu(menu,tearoff=0)
         file_menu.add_command(label="Save",command=self.save)
         file_menu.add_command(label="Load",command=self.load)
         file_menu.add_command(label="Clear",command=self.clear)
+
+        network_menu = Menu(menu,tearoff=0)
+        network_menu.add_command(label="Host Session",command=self.host)
+        network_menu.add_command(label="Connect to Session",command=self.query_server_address)
         menu.add_cascade(label="File",menu=file_menu)
+        menu.add_cascade(label="Network",menu=network_menu)
         gui.config(menu=menu)
         mainloop()
 
+    def host(self):
+        '''
+        Begin hosting a new session
+        :return: nothing
+        '''
+        self.communicator.connect(host=True,remote_address="")
+
+    def query_server_address(self):
+        '''
+        Attempt to connect to a remote server
+        :return: nothing
+        '''
+        #pass callback to join server after getting IP
+        InputDialog(self.gui,self.join_server)
+
+
+    def join_server(self,address):
+        print("Joining " + address)
+        self.communicator.connect(host=False,remote_address=address)
 
     def get_phrase(self):
         phrase = self.generator.GetPhrase()
