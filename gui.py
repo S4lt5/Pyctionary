@@ -80,10 +80,7 @@ class GUI(object):
         '''
         with open("doodles.txt","w") as f:
             for doodle in self.doodles:
-                line = "%d,%d,%d" % (doodle.doodle_type,doodle.x,doodle.y)
-                #if there is a destination point, also write this
-                if doodle.x2 and doodle.y2:
-                    line += ",%d,%d" % (doodle.x2,doodle.y2)
+                line = doodle.__str__()
                 f.write(line +"\n")
             f.close()
         print(self.doodles)
@@ -97,12 +94,7 @@ class GUI(object):
             lines = f.readlines()
             for line in lines:
 
-                args = line.strip().split(",")
-                if(len(args) == 3):
-                    args.append(None)
-                    args.append(None)
-
-                doodle = GUI.Doodle(args[0],args[1],args[2],args[3],args[4])
+                doodle = GUI.Doodle.parse(line)
                 self.draw(doodle)
                 #print(args)
 
@@ -177,6 +169,23 @@ class GUI(object):
         #A clear instruction erases the drawing area.
         CLEAR = 3
 
+        def __str__(self):
+            ''' Stringify
+            :return: A serializable string representation of this doodle
+            '''
+            line = "%d,%d,%d" % (self.doodle_type,self.x,self.y)
+            #if there is a destination point, also write this
+            if self.x2 and self.y2:
+                line += ",%d,%d" % (self.x2,self.y2)
+            return line
+        @staticmethod
+        def parse(line):
+            args = line.strip().split(",")
+            if(len(args) == 3):
+                args.append(None)
+                args.append(None)
+
+            return GUI.Doodle(args[0],args[1],args[2],args[3],args[4])
 
 
         def __init__(self,doodle_type,x,y,x2,y2):

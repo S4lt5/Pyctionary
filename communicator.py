@@ -1,4 +1,5 @@
 __author__ = 'matthewgalligan'
+from socket import *
 
 class Communicator(object):
     '''
@@ -34,8 +35,7 @@ class Communicator(object):
             self.remote_addresss = remote_address
 
         #close any connection that may exist
-        if self.connection is not None:
-            self.disconnect()
+        self.disconnect()
 
 
         if self.hosting:
@@ -46,6 +46,13 @@ class Communicator(object):
 
     def disconnect(self):
         if self.connection is not None:
+            self.connection = None
             print("Disconnecting.")
         else:
             print("Nothing to disconnect from.")
+
+
+
+    def transmit_doodle(self,doodle):
+        if self.connection is not None:
+            pass
