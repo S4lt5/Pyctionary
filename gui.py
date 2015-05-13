@@ -3,6 +3,9 @@ from Tkinter import *
 from phrase_generator import PhraseGenerator
 from communicator import Communicator
 from popup_window import InputDialog
+from doodle import Doodle
+import sys
+
 import tkMessageBox
 
 class GUI(object):
@@ -33,7 +36,7 @@ class GUI(object):
         self.doodles = []
 
         self.generator = PhraseGenerator
-        self.communicator = Communicator()
+        self.communicator = Communicator(draw_callback=self.draw)
         menu = Menu(gui)
         file_menu = Menu(menu,tearoff=0)
         file_menu.add_command(label="Save",command=self.save)
@@ -46,7 +49,15 @@ class GUI(object):
         menu.add_cascade(label="File",menu=file_menu)
         menu.add_cascade(label="Network",menu=network_menu)
         gui.config(menu=menu)
+        #hook close event
+       # gui.protocol("WM_DELETE_WINDOW", self.on_closing)
         mainloop()
+
+
+    #def on_closing(self):
+     #   cleanup
+      #  sys.exit(0)
+
 
     def host(self):
         '''
@@ -94,12 +105,12 @@ class GUI(object):
             lines = f.readlines()
             for line in lines:
 
-                doodle = GUI.Doodle.parse(line)
+                doodle = Doodle.parse(line)
                 self.draw(doodle)
                 #print(args)
 
     def clear(self):
-        clear_doodle = GUI.Doodle(GUI.Doodle.CLEAR,0,0,0,0)
+        clear_doodle = Doodle(Doodle.CLEAR,0,0,0,0)
         self.draw(clear_doodle)
 
     def unpaint(self,event):
@@ -110,10 +121,11 @@ class GUI(object):
         '''
         self.last_pos = None
 
-    def draw(self,doodle,store_local=True):
+    def draw(self,doodle,store_local=True,retransmit=True):
         '''
         Draw the specified doodle on the canvas
         :param doodle: The event to draw
+        :param retransmit: if true, the doodle will be sent to networked users.
         :return: Nothing
         '''
 
@@ -133,6 +145,8 @@ class GUI(object):
         if store_local is True:
             self.doodles.append(doodle)
 
+        if retransmit is True:
+            self.communicator.transmit_doodle(doodle)
 
     def paint(self,event):
         '''
@@ -145,58 +159,13 @@ class GUI(object):
 
         #http://www.python-course.eu/tkinter_canvas.php provided insight on using ovals to draw freely
         #the ovals(circles, really) are radius "1" from the point clicked.
-        doodle = GUI.Doodle(GUI.Doodle.OVAL,event.x,event.y,None,None)
+        doodle = Doodle(Doodle.OVAL,event.x,event.y,None,None)
         self.draw(doodle)
         #draw a line between this position and the last to ensure we have a continuous drawing line
         if self.last_pos:
-            line_doodle = GUI.Doodle(GUI.Doodle.LINE,event.x,event.y,self.last_pos[0],self.last_pos[1])
+            line_doodle = Doodle(Doodle.LINE,event.x,event.y,self.last_pos[0],self.last_pos[1])
             self.draw(line_doodle)
 
         #store last position to draw a line between any 'gaps'
         self.last_pos = (event.x,event.y)
 
-    class Doodle(object):
-        '''
-        A doodle represents a particular line or oval in a pyctionary drawing.
-
-        These are stored and retrieved to reproduce a user-drawn image.
-
-        '''
-        #An oval is drawn with radius 1 at point x,y
-        OVAL = 0
-        #A line is drawn between points at x,y and x2,y2
-        LINE = 1
-        #A clear instruction erases the drawing area.
-        CLEAR = 3
-
-        def __str__(self):
-            ''' Stringify
-            :return: A serializable string representation of this doodle
-            '''
-            line = "%d,%d,%d" % (self.doodle_type,self.x,self.y)
-            #if there is a destination point, also write this
-            if self.x2 and self.y2:
-                line += ",%d,%d" % (self.x2,self.y2)
-            return line
-        @staticmethod
-        def parse(line):
-            args = line.strip().split(",")
-            if(len(args) == 3):
-                args.append(None)
-                args.append(None)
-
-            return GUI.Doodle(args[0],args[1],args[2],args[3],args[4])
-
-
-        def __init__(self,doodle_type,x,y,x2,y2):
-            self.doodle_type = int(doodle_type)
-            self.x = int(x)
-            self.y = int(y)
-            if x2:
-                self.x2 = int(x2)
-            else:
-                self.x2 = None
-            if y2:
-                self.y2 = int(y2)
-            else:
-                self.y2 = None
